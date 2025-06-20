@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Website Builder</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      background-color: #007bff;
+      color: white;
+      padding: 10px;
+      text-align: center;
+    }
+    main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      flex-direction: row;
+    }
+    .sidebar, .properties {
+      width: 200px;
+      padding: 10px;
+      background-color: #f8f9fa;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+      box-sizing: border-box;
+    }
+    .canvas {
+      flex: 1;
+      background-color: #fff;
+      border: 2px dashed #ccc;
+      margin: 10px;
+      padding: 10px;
+      overflow: auto;
+      position: relative;
+      touch-action: none;
+    }
+    .element {
+      border: 1px solid #ddd;
+      padding: 5px;
+      margin: 5px;
+      cursor: move;
+      position: absolute;
+    }
+    input[type="text"], input[type="color"], input[type="range"], input[type="number"], select {
+      width: 100%;
+      margin: 5px 0;
+      box-sizing: border-box;
+    }
+    @media (max-width: 768px) {
+      main {
+        flex-direction: column;
+      }
+      .sidebar, .properties {
+        width: 100%;
+        box-shadow: none;
+      }
+      .canvas {
+        min-height: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Drag-and-Drop Website</h1>
+  </header>
+  <main>
+    <div class="sidebar">
+      <h3>Elements</h3>
+      <div draggable="true" class="element" data-type="text" style="position: static;">Text</div>
+      <div draggable="true" class="element" data-type="image" style="position: static;">Image</div>
+      <div draggable="true" class="element" data-type="button" style="position: static;">Button</div>
+      <!-- Clear Canvas Button -->
+      <button id="clearCanvasBtn" style="margin-top: 10px; width: 100%;">Clear Canvas</button>
+    </div>
+    <div class="canvas" id="canvas"></div>
+    <div class="properties">
+      <h3>Properties</h3>
+      <form id="propertiesForm">
+        <div id="textControls">
+          <label>Text:</label>
+          <input type="text" id="propText" />
+
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <label for="propFontSize">Font Size (px):</label>
+            <span id="fontSizeDisplay">16px</span>
+          </div>
+          <input type="range" id="propFontSize" min="8" max="72" value="16" />
+
+          <label>Color:</label>
+          <input type="color" id="propColor" />
+        </div>
+
+        
+
+        <div id="imageControls" style="display: none;">
+          <label>Image URL:</label>
+          <input type="text" id="propImageURL" />
+          <label>Width (px):</label>
+          <input type="number" id="propImgWidth" min="10" />
+          <label>Height (px):</label>
+          <input type="number" id="propImgHeight" min="10" />
+          <label>Border Color:</label>
+          <input type="color" id="propImgBorderColor" />
+        </div>
+
+        <button type="submit">Apply</button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const form = document.getElementById('propertiesForm');
+    const fontSizeInput = document.getElementById('propFontSize');
+    const fontSizeDisplay = document.getElementById('fontSizeDisplay');
+    const textControls = document.getElementById('textControls');
+    const imageControls = document.getElementById('imageControls');
+    const imgWidth = document.getElementById('propImgWidth');
+    const imgHeight = document.getElementById('propImgHeight');
+    const imgBorderColor = document.getElementById('propImgBorderColor');
+
+    let selectedElement = null;
+    let offsetX, offsetY;
+
+    document.querySelectorAll('.element').forEach(el => {
+      el.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/plain', el.getAttribute('data-type'));
+      });
+    });
+
+    canvas.addEventListener('dragover', e => e.preventDefault());
+
+    canvas.addEventListener('drop', e => {
+      e.preventDefault();
+      const type = e.dataTransfer.getData('text/plain');
+      let newEl;
+      switch(type) {
+        case 'text':
+          newEl = document.createElement('div');
+          newEl.textContent = 'Edit me';
+          break;
+        case 'image':
+          newEl = document.createElement('img');
+          newEl.src = 'https://via.placeholder.com/150';
+          newEl.style.maxWidth = '100%';
+          break;
+        case 'button':
+          newEl = document.createElement('button');
+          newEl.textContent = 'Click me';
+          break;
+      }
+      newEl.classList.add('element');
+      newEl.setAttribute('contenteditable', true);
+      newEl.style.left = `${e.offsetX}px`;
+      newEl.style.top = `${e.offsetY}px`;
+      newEl.style.position = 'absolute';
+      newEl.addEventListener('click', () => selectElement(newEl));
+      makeDraggable(newEl);
+      canvas.appendChild(newEl);
+    });
+
+    function makeDraggable(el) {
+      el.addEventListener('mousedown', startDrag);
+      el.addEventListener('touchstart', startDrag, { passive: false });
+    }
+
+    function startDrag(e) {
+      e.preventDefault();
+      selectedElement = e.target;
+      offsetX = e.offsetX || (e.touches && e.touches[0].clientX - selectedElement.getBoundingClientRect().left);
+      offsetY = e.offsetY || (e.touches && e.touches[0].clientY - selectedElement.getBoundingClientRect().top);
+      document.addEventListener('mousemove', moveElement);
+      document.addEventListener('mouseup', stopDrag);
+      document.addEventListener('touchmove', moveElement, { passive: false });
+      document.addEventListener('touchend', stopDrag);
+    }
+
+    function moveElement(e) {
+      if (!selectedElement) return;
+      const canvasRect = canvas.getBoundingClientRect();
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+      selectedElement.style.left = `${clientX - canvasRect.left - offsetX}px`;
+      selectedElement.style.top = `${clientY - canvasRect.top - offsetY}px`;
+    }
+
+    function stopDrag() {
+      document.removeEventListener('mousemove', moveElement);
+      document.removeEventListener('mouseup', stopDrag);
+      document.removeEventListener('touchmove', moveElement);
+      document.removeEventListener('touchend', stopDrag);
+    }
+
+    function selectElement(el) {
+      selectedElement = el;
+      const isImage = el.tagName === 'IMG';
+      textControls.style.display = isImage ? 'none' : 'block';
+      imageControls.style.display = isImage ? 'block' : 'none';
+
+      if (isImage) {
+        form.propImageURL.value = el.src || '';
+        imgWidth.value = el.style.width ? parseInt(el.style.width) : '';
+        imgHeight.value = el.style.height ? parseInt(el.style.height) : '';
+        imgBorderColor.value = el.style.borderColor || '#000000';
+      } else {
+        form.propText.value = el.textContent || '';
+        fontSizeInput.value = el.style.fontSize ? parseInt(el.style.fontSize) : 16;
+        fontSizeDisplay.textContent = fontSizeInput.value + 'px';
+        form.propColor.value = el.style.color || '#000000';
+      }
+    }
+
+    fontSizeInput.addEventListener('input', () => {
+      fontSizeDisplay.textContent = fontSizeInput.value + 'px';
+    });
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!selectedElement) return;
+
+      if (selectedElement.tagName === 'IMG') {
+        if (form.propImageURL.value) selectedElement.src = form.propImageURL.value;
+        if (imgWidth.value) selectedElement.style.width = `${imgWidth.value}px`;
+        if (imgHeight.value) selectedElement.style.height = `${imgHeight.value}px`;
+        if (imgBorderColor.value) selectedElement.style.border = `2px solid ${imgBorderColor.value}`;
+      } else {
+        selectedElement.textContent = form.propText.value;
+        selectedElement.style.fontSize = `${fontSizeInput.value}px`;
+        selectedElement.style.color = form.propColor.value;
+      }
+    });
+
+    document.getElementById('clearCanvasBtn').addEventListener('click', () => {
+      canvas.innerHTML = '';
+      selectedElement = null;
+      form.reset();
+      fontSizeDisplay.textContent = '16px';
+      textControls.style.display = 'none';
+      imageControls.style.display = 'none';
+      form.style.display = 'none';
+    });
+  </script>
+</body>
+</html>
