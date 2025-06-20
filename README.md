@@ -5,7 +5,7 @@ A responsive drag-and-drop website builder built using HTML, CSS, and JavaScript
 
 ## Live Demo
 
-https://drive.google.com/file/d/12WsuAu_7VscbcDI2KX8raffPzLRwaCHk/view?usp=sharing
+https://aishwaryabhise2003.github.io/drag-drop-website/
 
 
 ---
@@ -25,7 +25,7 @@ https://drive.google.com/file/d/12WsuAu_7VscbcDI2KX8raffPzLRwaCHk/view?usp=shari
 
 ## Demo Video
 
-[🎥 Watch a short demo](https://drive.google.com/your-video-link)
+[Watch a short demo](https://drive.google.com/file/d/12WsuAu_7VscbcDI2KX8raffPzLRwaCHk/view?usp=sharing)
 
 > Replace this link with your actual demo video on YouTube or Google Drive.
 
